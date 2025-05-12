@@ -10,6 +10,9 @@ import autogen
 from autogen import ConversableAgent, LLMConfig, Agent
 from autogen import AssistantAgent, UserProxyAgent, LLMConfig, register_function
 from autogen.code_utils import content_str
+from autogen.agentchat import initiate_group_chat
+from autogen.agentchat.group.patterns import AutoPattern
+
 from coding.constant import JOB_DEFINITION, RESPONSE_FORMAT
 from coding.utils import show_chat_history, display_session_msg, save_messages_to_json, paging
 from coding.agenttools import AG_search_expert, AG_search_news, AG_search_textbook, get_time
@@ -62,7 +65,7 @@ def main():
     )
 
     # Show title and description.
-    st.title(f"🧑‍🤝‍🧑 {user_name}'s Duo Chatbot")
+    st.title(f"💬 {user_name}'s Group Chatbot")
 
     with st.sidebar:
         paging()
@@ -97,8 +100,8 @@ def main():
     </DISCIPLINE>
     4. Use `AG_search_expert` to select expert by <DISCIPLINE>, also Use `AG_search_textbook` to select a textbook by <DISCIPLINE>.
     5. Explain to student a interesting essay within 500 words about the news using expert and textbook. Please remember to mention about the expert and textbook you cite.
-
-    6. Please output in {lang_setting}
+    6. After explanation, ask Tech_Agent and General_Agentt about their opinions.
+    7. Please output in {lang_setting}
 
     """
     with llm_config_openai:
@@ -111,17 +114,28 @@ def main():
         teacher_agent = ConversableAgent(
             name="Teacher_Agent",
             system_message=teacher_persona,
-            is_termination_msg=lambda x: content_str(x.get("content")).find("ALL DONE") >= 0,
-            human_input_mode="NEVER",
+            functions=[AG_search_news, AG_search_textbook, AG_search_expert],
         )
 
-    user_proxy = UserProxyAgent(
-        "user_proxy",
-        human_input_mode="NEVER",
-        code_execution_config=False,
-        is_termination_msg=lambda x: content_str(x.get("content")).find("ALL DONE") >= 0,
-    )
+        tech_agent = ConversableAgent(
+            name="Tech_Agent",
+            system_message="""You solve technical problems like software bugs
+            and hardware issues."""
+        )
 
+        general_agent = ConversableAgent(
+            name="General_Agent",
+            system_message="You handle general, non-technical support questions."
+        )
+
+    user = ConversableAgent(name="user", human_input_mode="ALWAYS")
+
+    pattern = AutoPattern(
+        initial_agent=teacher_agent,  # Agent that starts the conversation
+        agents=[teacher_agent, tech_agent, general_agent, student_agent],
+        user_agent=user,
+        group_manager_args={"llm_config": llm_config_openai}
+    )
 
     register_function(
         AG_search_expert,
@@ -157,21 +171,16 @@ def main():
         
         if messages_content and len(messages_content) > 0:
             if messages_role != 'tool':
-                st_c_chat.chat_message("ai").write(messages_content)
+                st_c_chat.chat_message("Student").write(messages_content)
 
-                message = {"role": messages_role, "content": messages_content}
+                message = {"role": "Student", "content": messages_content}
                 # Append to session history
                 st.session_state.messages.append(message)
 
             elif messages_role == 'tool':
                 st_c_chat.badge("Using tool...", icon="🛠️")
 
-        # message_to_send = {
-        #     "content": messages_content,
-        #     "role": "user",
-        # }
         return False, None
-        # return True, messages
 
     def ta_reply_function(recipient, messages, sender, config):
         messages_content = messages[-1]['content']
@@ -184,12 +193,42 @@ def main():
                 # Append to session history
                 st.session_state.messages.append(message)
             elif messages_role == 'tool':
-                st_c_chat.badge("Using tool...", icon="🛠️")
+                st_c_chat.badge("tea - Using tool...", icon="🛠️")
 
-        # message_to_send = {
-        #     "content": messages_content,
-        #     "role": "user",
-        # }
+        return False, None
+
+    def gen_reply_function(recipient, messages, sender, config):
+        messages_content = messages[-1]['content']
+        messages_role = messages[-1]['role']
+
+        if messages_content and len(messages_content) > 0:
+            if messages_role != 'tool':
+                st_c_chat.chat_message("General").write(messages_content)
+
+                message = {"role": "General", "content": messages_content}
+                # Append to session history
+                st.session_state.messages.append(message)
+
+            elif messages_role == 'tool':
+                st_c_chat.badge("gen-Using tool...", icon="🛠️")
+
+        return False, None
+
+    def tech_reply_function(recipient, messages, sender, config):
+        messages_content = messages[-1]['content']
+        messages_role = messages[-1]['role']
+        messages_name = messages[-1]['name']
+
+        if messages_content and len(messages_content) > 0:
+            if messages_role != 'tool':
+                st_c_chat.chat_message("Tech").write(messages_content)
+                message = {"role": "Tech", "content": messages_content}
+                # Append to session history
+                st.session_state.messages.append(message)
+
+            elif messages_role == 'tool':
+                st_c_chat.badge("tech-Using tool...", icon="🛠️")
+
 
         return False, None
         # return True, messages
@@ -206,13 +245,24 @@ def main():
         config={"callback": None},
     ) 
 
-    def generate_response(prompt):
-        chat_result = student_agent.initiate_chat(
-            teacher_agent,
-            message = prompt,
-            summary_method="reflection_with_llm",
-        )
+    tech_agent.register_reply(
+        [Agent, None],
+        reply_func=tech_reply_function, 
+        config={"callback": None},
+    ) 
 
+    general_agent.register_reply(
+        [Agent, None],
+        reply_func=gen_reply_function, 
+        config={"callback": None},
+    ) 
+
+    def generate_response(prompt):
+        chat_result, _, _ = initiate_group_chat(
+            pattern=pattern,
+            messages=prompt,
+            max_rounds=20
+        )
         response = chat_result.chat_history
         # st.write(response)
         return response

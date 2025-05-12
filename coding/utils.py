@@ -7,7 +7,8 @@ from datetime import datetime
 def paging():
     st.page_link("streamlit_app.py", label="Home", icon="🏠")
     st.page_link("pages/one_agent.py", label="Teacher Agents' Talk", icon="👩‍💼")
-    st.page_link("pages/two_agents.py", label="Two Agents' Talk", icon="💭")
+    st.page_link("pages/two_agents.py", label="Two Agents' Talk", icon="🧑‍🤝‍🧑")
+    st.page_link("pages/group_agents.py", label="Group Agents' Talk", icon="💭")
 
 def display_session_msg(container_obj, user_image: Optional[str] = None):
     # Initialize messages list if not present
@@ -61,18 +62,18 @@ def show_chat_history(container_obj, chat_history: List[Dict[str, Any]], user_im
 
             continue
 
-        role = entry.get('role', 'user')
-        message = {"role": role, "content": content}
-        processed.append(message)
+        # role = entry.get('role', 'user')
+        # message = {"role": role, "content": content}
+        # processed.append(message)
 
         # Append to session history
-        st.session_state.messages.append(message)
+        # st.session_state.messages.append(message)
 
         # Display according to role
-        if role == 'assistant':
-            container_obj.chat_message("assistant", avatar=user_image).write(content)
-        else:
-            container_obj.chat_message("ai").write(content)
+        # if role == 'assistant':
+        #     container_obj.chat_message("assistant", avatar=user_image).write(content)
+        # else:
+        #     container_obj.chat_message("ai").write(content)
 
     # Return the processed messages as a JSON string
     return json.dumps(processed, ensure_ascii=False, indent=2)
