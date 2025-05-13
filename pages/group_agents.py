@@ -109,6 +109,7 @@ def main():
         student_agent = ConversableAgent(
             name="Student_Agent",
             system_message=student_persona,
+            is_termination_msg=lambda x: content_str(x.get("content")).find("ALL DONE") >= 0,
         )
 
         teacher_agent = ConversableAgent(
@@ -128,7 +129,11 @@ def main():
             system_message="You handle general, non-technical support questions."
         )
 
-    user = ConversableAgent(name="user", human_input_mode="ALWAYS")
+    user = ConversableAgent(
+        name="user", 
+        human_input_mode="ALWAYS",
+        is_termination_msg=lambda x: content_str(x.get("content")).find("ALL DONE") >= 0,
+        )
 
     pattern = AutoPattern(
         initial_agent=teacher_agent,  # Agent that starts the conversation
@@ -193,6 +198,7 @@ def main():
                 # Append to session history
                 st.session_state.messages.append(message)
             elif messages_role == 'tool':
+                st_c_chat.chat_message("assistant", avatar=user_image).write("Try to use tool.")
                 st_c_chat.badge("tea - Using tool...", icon="🛠️")
 
         return False, None
@@ -261,7 +267,7 @@ def main():
         chat_result, _, _ = initiate_group_chat(
             pattern=pattern,
             messages=prompt,
-            max_rounds=20
+            max_rounds=12
         )
         response = chat_result.chat_history
         # st.write(response)
@@ -273,7 +279,7 @@ def main():
         messages = json.loads(conv_res)
         file_path = save_messages_to_json(messages, output_dir="chat_logs")
         st.write(f"Saved chat history to `{file_path}`")
-
+        st_c_chat.chat_message("assistant").write("Any question?")
     if prompt := st.chat_input(placeholder=placeholderstr, key="chat_bot"):
         chat(prompt)
 
