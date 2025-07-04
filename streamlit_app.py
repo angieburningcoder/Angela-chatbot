@@ -23,7 +23,7 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', None)
 OPEN_API_KEY = os.getenv('OPEN_API_KEY', None)
 
 placeholderstr = "Please input your command"
-user_name = "Gild"
+user_name = "Angela"
 user_image = "https://www.w3schools.com/howto/img_avatar.png"
 
 seed = 42
