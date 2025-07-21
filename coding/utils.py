@@ -10,6 +10,43 @@ def paging():
     st.page_link("pages/two_agents.py", label="Two Agents' Talk", icon="🧑‍🤝‍🧑")
     st.page_link("pages/group_agents.py", label="Group Agents' Talk", icon="💭")
 
+def custom_navigation():
+    """Custom navigation that works with any entry point"""
+    st.markdown("### 🧭 Navigation")
+    
+    # Get the current script path to determine navigation
+    import sys
+    current_script = sys.argv[0] if len(sys.argv) > 0 else ""
+    
+    # Determine if we're in pages directory
+    is_in_pages = "pages/" in current_script or "pages\\" in current_script
+    
+    if st.button("🏠 Home", key="nav_home"):
+        if is_in_pages:
+            st.switch_page("../streamlit_app_one_agent_fixed.py")
+        else:
+            st.switch_page("streamlit_app_one_agent_fixed.py")
+    
+    if st.button("👩‍💼 Teacher Agents' Talk", key="nav_one_agent"):
+        if is_in_pages:
+            st.switch_page("one_agent.py")
+        else:
+            st.switch_page("pages/one_agent.py")
+    
+    if st.button("🧑‍🤝‍🧑 Two Agents' Talk", key="nav_two_agents"):
+        if is_in_pages:
+            st.switch_page("two_agents.py")
+        else:
+            st.switch_page("pages/two_agents.py")
+    
+    if st.button("💭 Group Agents' Talk", key="nav_group_agents"):
+        if is_in_pages:
+            st.switch_page("group_agents.py")
+        else:
+            st.switch_page("pages/group_agents.py")
+    
+    st.markdown("---")
+
 def display_session_msg(container_obj, user_image: Optional[str] = None):
     # Initialize messages list if not present
     messages = st.session_state.setdefault("messages", [])

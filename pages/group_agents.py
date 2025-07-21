@@ -14,7 +14,7 @@ from autogen.agentchat import initiate_group_chat
 from autogen.agentchat.group.patterns import AutoPattern
 
 from coding.constant import JOB_DEFINITION, RESPONSE_FORMAT
-from coding.utils import show_chat_history, display_session_msg, save_messages_to_json, paging
+from coding.utils import show_chat_history, display_session_msg, save_messages_to_json, custom_navigation
 from coding.agenttools import AG_search_expert, AG_search_news, AG_search_textbook, get_time
 
 # Load environment variables from .env file
@@ -26,7 +26,7 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', None)
 OPEN_API_KEY = os.getenv('OPEN_API_KEY', None)
 
 placeholderstr = "Please input your command"
-user_name = "Gild"
+user_name = "Angela"
 user_image = "https://www.w3schools.com/howto/img_avatar.png"
 
 seed = 42
@@ -68,7 +68,7 @@ def main():
     st.title(f"💬 {user_name}'s Group Chatbot")
 
     with st.sidebar:
-        paging()
+        custom_navigation()
 
         selected_lang = st.selectbox("Language", ["English", "繁體中文"], index=0, on_change=save_lang, key="language_select")
         if 'lang_setting' in st.session_state:

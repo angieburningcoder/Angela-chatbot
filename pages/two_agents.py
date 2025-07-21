@@ -11,7 +11,7 @@ from autogen import ConversableAgent, LLMConfig, Agent
 from autogen import AssistantAgent, UserProxyAgent, LLMConfig, register_function
 from autogen.code_utils import content_str
 from coding.constant import JOB_DEFINITION, RESPONSE_FORMAT
-from coding.utils import show_chat_history, display_session_msg, save_messages_to_json, paging
+from coding.utils import show_chat_history, display_session_msg, save_messages_to_json, custom_navigation
 from coding.agenttools import AG_search_expert, AG_search_news, AG_search_textbook, get_time
 
 # Load environment variables from .env file
@@ -23,7 +23,7 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY', None)
 OPEN_API_KEY = os.getenv('OPEN_API_KEY', None)
 
 placeholderstr = "Please input your command"
-user_name = "Gild"
+user_name = "Angela"
 user_image = "https://www.w3schools.com/howto/img_avatar.png"
 
 seed = 42
@@ -65,7 +65,7 @@ def main():
     st.title(f"🧑‍🤝‍🧑 {user_name}'s Duo Chatbot")
 
     with st.sidebar:
-        paging()
+        custom_navigation()
 
         selected_lang = st.selectbox("Language", ["English", "繁體中文"], index=0, on_change=save_lang, key="language_select")
         if 'lang_setting' in st.session_state:
@@ -151,6 +151,12 @@ def main():
         description="Get the current date & time.",
     )
 
+    # Initialize agent-specific message storage
+    current_profile = st.session_state.get('current_profile', 'KA助理')
+    messages_key = f"messages_two_agents_{current_profile}"
+    if messages_key not in st.session_state:
+        st.session_state[messages_key] = []
+
     def st_reply_function(recipient, messages, sender, config):
         messages_content = messages[-1]['content']
         messages_role = messages[-1]['role']
@@ -160,18 +166,13 @@ def main():
                 st_c_chat.chat_message("ai").write(messages_content)
 
                 message = {"role": messages_role, "content": messages_content}
-                # Append to session history
-                st.session_state.messages.append(message)
+                # Append to agent-specific session history
+                st.session_state[messages_key].append(message)
 
             elif messages_role == 'tool':
                 st_c_chat.badge("Using tool...", icon="🛠️")
 
-        # message_to_send = {
-        #     "content": messages_content,
-        #     "role": "user",
-        # }
         return False, None
-        # return True, messages
 
     def ta_reply_function(recipient, messages, sender, config):
         messages_content = messages[-1]['content']
@@ -181,18 +182,12 @@ def main():
             if messages_role != 'tool':
                 st_c_chat.chat_message("assistant", avatar=user_image).write(messages_content)
                 message = {"role": messages_role, "content": messages_content}
-                # Append to session history
-                st.session_state.messages.append(message)
+                # Append to agent-specific session history
+                st.session_state[messages_key].append(message)
             elif messages_role == 'tool':
                 st_c_chat.badge("Using tool...", icon="🛠️")
 
-        # message_to_send = {
-        #     "content": messages_content,
-        #     "role": "user",
-        # }
-
         return False, None
-        # return True, messages
 
     student_agent.register_reply(
         [Agent, None],

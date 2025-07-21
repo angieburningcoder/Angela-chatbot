@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 from dotenv import load_dotenv
-from autogen import ConversableAgent, LLMConfig
+from autogen import ConversableAgent, UserProxyAgent
 from autogen.code_utils import content_str
 import re
 
@@ -13,7 +13,10 @@ USER_NAME = "Angela"
 USER_IMAGE = "https://www.w3schools.com/howto/img_avatar.png"
 
 LLM_CONFIG_MAP = {
-    model: LLMConfig(api_type="openai", model=model, api_key=os.getenv("OPENAI_API_KEY"))
+    model: {
+        "config_list": [{"model": model, "api_key": os.getenv("OPENAI_API_KEY")}],
+        "temperature": 0.7
+    }
     for model in MODEL_OPTIONS
 }
 
@@ -30,7 +33,6 @@ TRANSLATIONS = {
         "invalid_name": "Invalid or duplicated topic name", "upload_avatar": "Upload Avatar", "reupload_avatar": "Re-upload Avatar"
     }
 }
-
 def init_session_state():
     defaults = {
         "lang_setting": "繁體中文",
@@ -263,3 +265,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
